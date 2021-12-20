@@ -1,0 +1,3 @@
+import vehiculos
+
+vehiculos.imprimir
