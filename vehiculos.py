@@ -35,13 +35,21 @@ def dar_de_alta():
             # Insertar sin matrícula ni fecha de matriculación
         if matricula=="":
             orden = "insert into vehiculo (num_bastidor, marca, modelo, tipo_vehiculo, disponibilidad, fecha_llegada)\
-values ("+num_bastidor+","+marca+","+modelo+","+tipo+",'"+disponibilidad+"',to_date('"+fecha_llegada+"','dd/mm/yyyy'))"
-            cursor.execute(orden)
+values ('"+num_bastidor+"','"+marca+"','"+modelo+"','"+tipo+"','"+disponibilidad+"',to_date('"+fecha_llegada+"','dd/mm/yyyy'))"
+            # print(orden)
+            try:
+                cursor.execute(orden)
+            except pyodbc.Error as ex:
+                print("ERROR - no se ha insertado el vehículo\n" + ex.args[1].split("\n")[0]+"\n")
         # Insertar con matrícula
         else:
-            orden = "insert into vehiculo values ("+num_bastidor+","+marca+","+modelo+","+tipo+",'"+disponibilidad+\
-"',to_date('"+fecha_llegada+"','dd/mm/yyyy'),to_date('"+fecha_matriculacion+"','dd/mm/yyyy'),"+matricula+")"
-            cursor.execute(orden)
+            orden = "insert into vehiculo values ('"+num_bastidor+"','"+marca+"','"+modelo+"','"+tipo+"','"+disponibilidad+\
+"',to_date('"+fecha_llegada+"','dd/mm/yyyy'),to_date('"+fecha_matriculacion+"','dd/mm/yyyy'),'"+matricula+"')"
+            # print(orden)
+            try:
+                cursor.execute(orden)
+            except pyodbc.Error as ex:
+                print("ERROR - no se ha insertado el vehículo\n" + ex.args[1].split("\n")[0]+"\n")
         print("Quiere insertar otro vehículo? (1=Si/0=No)")
         seguir = int(input())
 
@@ -53,7 +61,7 @@ values ("+num_bastidor+","+marca+","+modelo+","+tipo+",'"+disponibilidad+"',to_d
         cursor.commit()
 
 def retirar():
-    seguir = True
+    seguir = 1
     cursor.execute("savepoint sin_borrar")
     while seguir:
         print("¿Desea mostrar los vehículos disponibles? (1=Si/0=No)")
@@ -69,17 +77,18 @@ def retirar():
             nb = input()
             cursor.execute("delete from vehiculo where num_bastidor="+nb)
         print("Desea eliminar más vehículos?")
-        seguir=bool(input())
+        seguir=int(input())
+        # print(seguir)
     print("Confirmar cambios?")
-    confirm = bool(input())
+    confirm = int(input())
     if confirm:
         cursor.commit()
     else:
         cursor.execute("rollback to savepoint sin_borrar")
 
 def consultar_disponibilidad():
-    seguir=True
-    if seguir:
+    seguir=1
+    while seguir:
         print("Introduzca una marca (dejar en blanco si no quiere especificar)")
         marca=input()
         print("Introduzca un modelo (dejar en blanco si no quiere especificar)")
@@ -88,12 +97,11 @@ def consultar_disponibilidad():
         if marca=="" and modelo=="":
             cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo")
         if marca=="" and modelo!="":
-            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where modelo="+modelo)
+            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where modelo='"+modelo+"'")
         if marca!="" and modelo!="":
-            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where modelo="+modelo+" and marca="+ marca)
+            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where modelo='"+modelo+"'"+" and marca='"+ marca+"'")
         if marca!="" and modelo=="":
-            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where marca="+marca)
-
+            cursor.execute("select marca,modelo,tipo_vehiculo,fecha_llegada,disponibilidad from vehiculo where marca='"+marca+"'")
 
         row = cursor.fetchone()
         while row:
@@ -101,25 +109,25 @@ def consultar_disponibilidad():
             row = cursor.fetchone()
 
         print("Desea realizar otra consulta?")
-        seguir=bool(input())
+        seguir=int(input())
 
 def consultar_caracteristicas():
-    seguir=True
-    if seguir:
+    seguir=1
+    while seguir:
         print("Introduzca un número de bastidor")
         nb=input()
-        cursor.execute("select * from vehiculo where num_bastidor="+nb)
+        cursor.execute("select * from vehiculo where num_bastidor='"+nb+"'")
 
         row = cursor.fetchone()
         print(row)
 
         print("Desea realizar otra consulta?")
-        seguir=bool(input())
+        seguir=int(input())
 
 def modificar_caracteristicas():
     cursor.execute("savepoint sin_modificar")
     print("Desea mostrar los vehículos disponibles?")
-    mostrar = bool(input())
+    mostrar = int(input())
     if mostrar:
         cursor.execute("select * from vehiculo")
         row = cursor.fetchone()
@@ -139,15 +147,25 @@ def modificar_caracteristicas():
         print("Nuevo valor")
         nv = input()
         if select==1:
-            cursor.execute("update vehiculo set disponibilidad='"+nv+"' where num_bastidor="+nb)
+            try:
+                cursor.execute("update vehiculo set disponibilidad='"+nv+"' where num_bastidor='"+nb+"'")
+            except pyodbc.Error as ex:
+                print("ERROR - no se han modificado datos del vehículo\n"+ex.args[1].split("\n")[0]+"\n")
+
         if select==2:
-            cursor.execute("update vehiculo set matricula='"+nv+"' where num_bastidor="+nb)
+            try:
+                cursor.execute("update vehiculo set matricula='"+nv+"' where num_bastidor='"+nb+"'")
+            except pyodbc.Error as ex:
+                print("ERROR - no se han modificado datos del vehículo\n"+ex.args[1].split("\n")[0]+"\n")
         if select==3:
-            cursor.execute("update vehiculo set fecha_matriculacion=to_date('"+nv+"', 'dd/mm/yyyy') where num_bastidor="+nb)
+            try:
+                cursor.execute("update vehiculo set fecha_matriculacion=to_date('"+nv+"', 'dd/mm/yyyy') where num_bastidor='"+nb+"'")
+            except pyodbc.Error as ex:
+                print("ERROR - no se han modificado datos del vehículo\n"+ex.args[1].split("\n")[0]+"\n")
         print("Desea realizar otra modificación?")
-        seguir = bool(input)
+        seguir = int(input())
     print("Desea confirmar los cambios?")
-    confirm = bool(input)
+    confirm = int(input())
     if confirm:
         cursor.commit
     else:
@@ -160,6 +178,7 @@ def menu():
     print("3. Consultar disponibilidad")
     print("4. Consultar características")
     print("5. Modificar características")
+    print("6. Salir")
     choice = int(input())
     return choice
 

@@ -12,9 +12,25 @@ create table vehiculo (
 
 drop table vehiculo;
 
-/* dar de alta vehículo con matricula */
-insert into vehiculo values (1,2,3,4,'alquiler',to_date('10/06/2001','dd/mm/yyyy'),to_date('10/07/2001','dd/mm/yyyy'),'9');
+CREATE OR REPLACE TRIGGER num_bastidor
+	BEFORE  
+	INSERT on vehiculo
+	FOR EACH ROW
+DECLARE
+    existe INTEGER;
+BEGIN
+	SELECT count(*) INTO existe FROM vehiculo WHERE num_bastidor = :new.num_bastidor;
+	IF (existe > 0) THEN 
+		raise_application_error(-20600, :new.num_bastidor || ' no pueden existir dos vehículos con el mismo número de bastidor');
+	END IF;
+END;
 
-select * from vehiculo;
-
-delete from vehiculo where num_bastidor=1;
+CREATE OR REPLACE TRIGGER disponibilidad
+    BEFORE
+    INSERT on vehiculo
+    FOR EACH ROW
+BEGIN
+    IF (:new.disponibilidad != 'alquiler' or :new.disponibilidad != 'venta' or :new.disponibilidad != 'no disponible' THEN
+        raise_application_error(-20601, :new.disponibilidad || ' la disponibilidad debe ser venta, alquiler o no disponible');
+    END IF;
+END;
